@@ -1,6 +1,7 @@
 package pack;
 
 import java.util.Stack;
+import lejos.hardware.Sound;
 
 public class Explorer {
     /* Maximum map size */
@@ -95,7 +96,6 @@ public class Explorer {
                 tdir = i;
             }
         }
-
         while (tx != posX || ty != posY || tdir != posDir) {
             if (path[tx][ty][tdir] == 0) {
                 stack.push("goForward");
@@ -111,20 +111,24 @@ public class Explorer {
                 tdir = (tdir + 1) % 4;
             }
         }
+        int prevAction = 0; // 0: goForward, 1: turnRight, 2: turnLeft
         while (!stack.empty()) {
             String str = stack.pop();
             if (str == "goForward") {
-                api.goForward();
+                api.goForward(prevAction);
                 posX += dx[posDir];
                 posY += dy[posDir];
+                prevAction = 0;
             }
             else if (str == "turnRight") {
-                api.turnRight();
+                api.turnRight(prevAction);
                 posDir = (posDir + 1) % 4;
+                prevAction = 1;
             }
             else if (str == "turnLeft") {
-                api.turnLeft();
+                api.turnLeft(prevAction);
                 posDir = (posDir + 3) % 4;
+                prevAction = 2;
             }
         }
     }
@@ -136,6 +140,7 @@ public class Explorer {
             if (api.isRed()) {
                 mapRed[x][y] = 2;
                 countDetectedRed += 1;
+                Sound.beep();
                 printPos(x, y, "R");
             }
             else {
@@ -162,7 +167,8 @@ public class Explorer {
             }
 
             if (!keepDfs) break;
-
+            
+            moveDirect(x, y);
             int ddir[] = new int[]{ 0, 1, 3, 2 };
             for (int i = 0; i < 4; i++) {
                 int tdir = (posDir + ddir[i]) % 4;
@@ -171,18 +177,17 @@ public class Explorer {
                 
                 if (0 <= tx && tx <= maxMapSizeX && 0 <= ty && ty <= maxMapSizeY) {
                     if (countDetectedBox < 2 && mapBox[tx][ty] == 0) {
-                        moveDirect(x, y);
                         if (ddir[i] == 1) {
-                            api.turnRight();
+                            api.turnRight(0);
                             posDir = (posDir + 1) % 4;
                         }
                         else if (ddir[i] == 3) {
-                            api.turnLeft();
+                            api.turnLeft(0);
                             posDir = (posDir + 3) % 4;
                         }
                         else if (ddir[i] == 4) {
-                            api.turnRight();
-                            api.turnRight();
+                            api.turnRight(0);
+                            api.turnRight(1);
                             posDir = (posDir + 2) % 4;
                         }
 
@@ -190,6 +195,7 @@ public class Explorer {
                             mapBox[tx][ty] = 2;
                             mapRed[tx][ty] = 1;
                             countDetectedBox += 1;
+                            Sound.twoBeeps();
                             printPos(tx, ty, "B");
                         }
                         else {
@@ -214,6 +220,7 @@ public class Explorer {
         mapRed = new int[maxMapSizeX + 1][maxMapSizeY + 1];
         countDetectedBox = 0;
         countDetectedRed = 0;
+        mapBox[x][y] = 1;
         
         // dfs
         dfs(x, y);
