@@ -1,4 +1,4 @@
-package pack;
+package test_motor;
 
 import lejos.hardware.BrickFinder;
 import lejos.hardware.Keys;
@@ -6,42 +6,58 @@ import lejos.hardware.ev3.EV3;
 import lejos.utility.Delay;
 
 public class Robot {
-    private static final int maxRound = 1;
+    private static final int maxRound = 5;
 
 	public static void main(String[] args) {
         Api api = new Api();
+
         FruitDetectThread fruitDetectThread = new FruitDetectThread();
-        TouchDetectThread touchDetectThread = new TouchDetectThread();
+        fruitDetectThread.start();
 
-        int round = 1;
-        boolean isRobotTurn = true;
-        boolean needWait = false;
+        int round = 1, winRobot = 0, winHuman = 0;
+        boolean isRobotTurn = true, needWait = false;
         int cacheCardStatus = 0;
+        int cacheCardN = 0;
+        boolean isBegin = false;
 
+		EV3 ev3 = (EV3) BrickFinder.getLocal();
+        Keys keys = ev3.getKeys();
+        
         while (round <= maxRound) {
-            if (fruitDetectThread.areThereFiveFruit()) {
-                api.ringTheBell();
-                // check who win
-                round += 1;
-                // winner first ?
+        	if (keys.getButtons() == Keys.ID_ESCAPE) break;
 
+            if (fruitDetectThread.areThereFiveFruit()) {
+                boolean success = api.ringTheBell();
+                if (success) {
+                    System.out.println("Round " + round + " : Robot win!!");
+                    winRobot += 1;
+                    isRobotTurn = true;
+                } else {
+                    System.out.println("Round " + round + " : You win!!");
+                    winHuman += 1;
+                    isRobotTurn = false;
+                    isBegin = true;
+                }
+
+                System.out.println("Total score [Robot : Human] = " + winRobot + " : " + winHuman);
+                System.out.println("The robot is waiting for the next round");
+                api.waitUntilRoundEnd();
+                fruitDetectThread.clearStatus();
+                round += 1;
             } else if (isRobotTurn) {
                 // turn of robot
-                if (!needWait) {
-                    cacheCardStatus = fruitDetectThread.getStatus();
-                    api.flipOneCard();
-                    needWait = true;
-                } else if (fruitDetectThread.getStatus() != cacheCardStatus) {
-                    needWait = false;
-                    isRobotTurn = false;
-                }
+                cacheCardStatus = fruitDetectThread.getStatus();
+                api.flipOneCard();
+                isRobotTurn = false;
 
             } else {
                 // turn of human
                 if (!needWait) {
                     cacheCardStatus = fruitDetectThread.getStatus();
+                    cacheCardN = fruitDetectThread.getN();
                     needWait = true;
-                } else if (fruitDetectThread.getStatus() != cacheCardStatus) {
+                } else if (fruitDetectThread.getStatus() != cacheCardStatus
+                    || (isBegin && fruitDetectThread.getN() != cacheCardN)) {
                     needWait = false;
                     isRobotTurn = true;
                 }
@@ -49,7 +65,7 @@ public class Robot {
         }
 
         // stop all thread
+        api.stopAllThread();
         fruitDetectThread.Stop();
-        touchDetectThread.Stop();
 	}
 }

@@ -1,17 +1,17 @@
 from camera import Camera
 from fruitDetect import FruitDetect
-from socket import Socket
+from socketWrap import SocketWrap
 
 def run():
     camera = Camera()
     detector = FruitDetect()
-    socket = Socket()
+    socket = SocketWrap()
 
     while True:
         img = camera.capture()
         result = detector.detect(img)
-        socket.send(result)
-
-
+        if socket.receive():
+            socket.send(result)
+            
 if __name__ == "__main__":
     run()
