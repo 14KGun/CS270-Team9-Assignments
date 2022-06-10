@@ -1,18 +1,3 @@
-######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#
-# Author: Evan Juras
-# Date: 9/28/19
-# Description: 
-# This program uses a TensorFlow Lite object detection model to perform object 
-# detection on an image or a folder full of images. It draws boxes and scores 
-# around the objects of interest in each image.
-#
-# This code is based off the TensorFlow Lite image classification example at:
-# https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/examples/python/label_image.py
-#
-# I added my own method of drawing boxes and labels using OpenCV.
-
-# Import packages
 import os
 import argparse
 import cv2
@@ -168,18 +153,14 @@ while True:
             else:
                 b_num += fruit_num
     
-    if(s_num == 10):
-        s_num = 0
-    if(l_num == 10):
-        s_num = 0
-    if(p_num == 10):
-        s_num = 0
-    if(b_num == 10):
-        s_num = 0
+    if(s_num == 10): s_num = 0
+    if(l_num == 10): l_num = 0
+    if(p_num == 10): p_num = 0
+    if(b_num == 10): b_num = 0
 
     if nOfDetectedCard <= 2:
         result = str(nOfDetectedCard) + str(s_num) + str(l_num) + str(p_num) + str(b_num)
-        print(result)
+        #print(result)
         if socket.receive():
             socket.send(result)
     
